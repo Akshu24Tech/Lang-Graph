@@ -28,6 +28,10 @@ def initialize_session_state():
         st.session_state.user_improvement_feedback = None
     if "needs_regeneration" not in st.session_state:
         st.session_state.needs_regeneration = False
+    if "message_audios" not in st.session_state:
+        st.session_state.message_audios = {}
+    if "pending_audio" not in st.session_state:
+        st.session_state.pending_audio = None
 
 initialize_session_state()
 
@@ -97,6 +101,8 @@ with st.sidebar:
         st.session_state.show_feedback_form = False
         st.session_state.user_improvement_feedback = None
         st.session_state.needs_regeneration = False
+        st.session_state.message_audios = {}
+        st.session_state.pending_audio = None
         st.rerun()
     
     # Chat statistics
@@ -122,11 +128,25 @@ with chat_container:
                 if st.session_state.voice_enabled:
                     col1, col2 = st.columns([1, 4])
                     with col1:
-                        if st.button(f"🔊 Play", key=f"play_message_{i}_{hash(content)%1000}"):
+                        audio_key = f"message_{i}_{hash(content)%1000}"
+                        button_key = f"play_{audio_key}"
+                        
+                        if st.button(f"🔊 Play", key=button_key):
                             with st.spinner("Generating speech..."):
                                 audio_bytes = voice_integration.text_to_speech(content, st.session_state.selected_voice)
                                 if audio_bytes:
-                                    st.audio(audio_bytes, format="audio/mp3")
+                                    st.session_state.message_audios[audio_key] = audio_bytes
+                                    st.rerun()
+                    
+                    # Display audio if available for this specific message
+                    audio_key = f"message_{i}_{hash(content)%1000}"
+                    if audio_key in st.session_state.message_audios:
+                        with col2:
+                            st.audio(st.session_state.message_audios[audio_key], format="audio/mp3")
+                            clear_key = f"clear_{audio_key}"
+                            if st.button("❌ Clear Audio", key=clear_key):
+                                del st.session_state.message_audios[audio_key]
+                                st.rerun()
 
 # Pending response review (Simplified HITL)
 if st.session_state.awaiting_approval and st.session_state.pending_response:
@@ -149,7 +169,16 @@ if st.session_state.awaiting_approval and st.session_state.pending_response:
                             st.session_state.selected_voice
                         )
                         if audio_bytes:
-                            st.audio(audio_bytes, format="audio/mp3")
+                            st.session_state.pending_audio = audio_bytes
+                            st.rerun()
+            
+            # Display pending audio if available
+            if st.session_state.pending_audio:
+                with col2:
+                    st.audio(st.session_state.pending_audio, format="audio/mp3")
+                    if st.button("❌ Clear", key="clear_pending_audio"):
+                        st.session_state.pending_audio = None
+                        st.rerun()
         
         st.divider()
         

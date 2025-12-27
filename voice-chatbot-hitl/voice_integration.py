@@ -54,8 +54,10 @@ class VoiceIntegration:
             }
             
             print(f"🔊 Making TTS request to Deepgram...")
-            print(f"   Text: {text[:50]}...")
+            print(f"   Text length: {len(text)} chars")
             print(f"   Voice: {voice}")
+            print(f"   URL: {url}")
+            print(f"   Params: {params}")
             
             response = requests.post(url, json=payload, headers=headers, params=params, timeout=30)
             
