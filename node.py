@@ -2,6 +2,7 @@ import sys
 import io
 from langchain_openai import ChatOpenAI # Using GPT-4o-mini as per Video 8
 from langchain_core.messages import SystemMessage, HumanMessage
+from state import AssistantState
 
 llm = ChatOpenAI(model="gpt-4o-mini")
 

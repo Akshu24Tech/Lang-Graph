@@ -1,0 +1,9 @@
+langgraph
+langchain
+langchain-openai
+streamlit
+python-dotenv
+deepgram-sdk
+audio-recorder-streamlit
+requests
+sqlite3
