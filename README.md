@@ -57,7 +57,3 @@ This is the culmination of the concepts practiced in the lab. It takes the robus
 **Akshu Grewal** *AI/ML Enthusiast & Agentic AI Developer* [akshug2004@gmail.com]
 
 ---
-
-*This repository serves as a portfolio of my growth in building reliable, stateful AI agents.*
-
----*
