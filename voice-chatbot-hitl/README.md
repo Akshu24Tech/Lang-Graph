@@ -341,14 +341,6 @@ pip install -r requirements-dev.txt  # If available
 python -m pytest tests/
 ```
 
----
-
-## 📄 **License**
-
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
-
----
-
 ## 🙏 **Acknowledgments**
 
 ### **Inspiration & Learning Sources**
