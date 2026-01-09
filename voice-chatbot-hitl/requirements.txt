@@ -6,4 +6,5 @@ python-dotenv
 deepgram-sdk
 audio-recorder-streamlit
 requests
-sqlite3
+psycopg[binary,pool]
+langgraph-checkpoint-postgres
