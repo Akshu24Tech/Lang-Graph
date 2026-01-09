@@ -1,9 +1,8 @@
 langgraph
 langchain
-langchain-openai
+langchain-google-genai
 streamlit
 python-dotenv
 deepgram-sdk
 audio-recorder-streamlit
 requests
-sqlite3

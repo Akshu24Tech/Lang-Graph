@@ -2,9 +2,31 @@ import streamlit as st
 import uuid
 from audio_recorder_streamlit import audio_recorder
 from langchain_core.messages import HumanMessage, AIMessage
+from langgraph.graph import StateGraph, START, END
+from langgraph.checkpoint.memory import InMemorySaver
+from langgraph.store.memory import InMemoryStore
 from state import ChatState
-from nodes import chat_node, human_review_node, response_delivery_node
+from nodes import chat_node, remember_node
 from voice_integration import voice_integration
+
+# Initialize STM (Short Term Memory) and LTM (Long Term Memory)
+if "checkpointer" not in st.session_state:
+    st.session_state.checkpointer = InMemorySaver()
+if "ltm_store" not in st.session_state:
+    st.session_state.ltm_store = InMemoryStore()
+
+# Create a simple graph for Streamlit: remember -> chat
+if "chat_graph" not in st.session_state:
+    builder = StateGraph(ChatState)
+    builder.add_node("remember", remember_node)
+    builder.add_node("chat", chat_node)
+    builder.add_edge(START, "remember")
+    builder.add_edge("remember", "chat")
+    builder.add_edge("chat", END)
+    st.session_state.chat_graph = builder.compile(
+        checkpointer=st.session_state.checkpointer,
+        store=st.session_state.ltm_store
+    )
 
 st.set_page_config(page_title="Voice Chatbot with HITL", page_icon="🎤", layout="wide")
 
@@ -14,6 +36,10 @@ def generate_session_id():
 def initialize_session_state():
     if "session_id" not in st.session_state:
         st.session_state.session_id = generate_session_id()
+    if "user_id" not in st.session_state:
+        # User ID for LTM (Long Term Memory) - persists across sessions
+        # You can change this to identify different users
+        st.session_state.user_id = "default_user"
     if "messages" not in st.session_state:
         st.session_state.messages = []
     if "pending_response" not in st.session_state:
@@ -32,6 +58,8 @@ def initialize_session_state():
         st.session_state.message_audios = {}
     if "pending_audio" not in st.session_state:
         st.session_state.pending_audio = None
+    if "audio_generation_counter" not in st.session_state:
+        st.session_state.audio_generation_counter = 0
 
 initialize_session_state()
 
@@ -94,6 +122,14 @@ with st.sidebar:
     # Session management
     st.subheader("💬 Session")
     
+    # User ID for LTM (can be changed to switch users)
+    user_id = st.text_input(
+        "User ID (for memory)",
+        value=st.session_state.user_id,
+        help="This identifies you for long-term memory. Change to switch users."
+    )
+    st.session_state.user_id = user_id
+    
     if st.button("🔄 Clear Chat", use_container_width=True):
         st.session_state.messages = []
         st.session_state.pending_response = None
@@ -124,29 +160,41 @@ with chat_container:
             with st.chat_message("assistant"):
                 st.write(content)
                 
-                # Add audio playback for AI responses
+                # Add audio playbook for AI responses
                 if st.session_state.voice_enabled:
                     col1, col2 = st.columns([1, 4])
                     with col1:
-                        audio_key = f"message_{i}_{hash(content)%1000}"
-                        button_key = f"play_{audio_key}"
+                        # Create unique audio key for each message
+                        message_id = f"msg_{i}_{abs(hash(content))}"
+                        button_key = f"play_btn_{message_id}"
                         
                         if st.button(f"🔊 Play", key=button_key):
                             with st.spinner("Generating speech..."):
-                                audio_bytes = voice_integration.text_to_speech(content, st.session_state.selected_voice)
-                                if audio_bytes:
-                                    st.session_state.message_audios[audio_key] = audio_bytes
-                                    st.rerun()
+                                try:
+                                    audio_bytes = voice_integration.text_to_speech(content, st.session_state.selected_voice)
+                                    if audio_bytes:
+                                        st.session_state.message_audios[message_id] = audio_bytes
+                                        st.session_state.audio_generation_counter += 1
+                                        st.rerun()
+                                except Exception as e:
+                                    st.error(f"Audio generation failed: {str(e)}")
                     
                     # Display audio if available for this specific message
-                    audio_key = f"message_{i}_{hash(content)%1000}"
-                    if audio_key in st.session_state.message_audios:
+                    message_id = f"msg_{i}_{abs(hash(content))}"
+                    if message_id in st.session_state.message_audios:
                         with col2:
-                            st.audio(st.session_state.message_audios[audio_key], format="audio/mp3")
-                            clear_key = f"clear_{audio_key}"
-                            if st.button("❌ Clear Audio", key=clear_key):
-                                del st.session_state.message_audios[audio_key]
-                                st.rerun()
+                            try:
+                                st.audio(st.session_state.message_audios[message_id], format="audio/mp3")
+                                clear_key = f"clear_btn_{message_id}"
+                                if st.button("❌ Clear Audio", key=clear_key):
+                                    if message_id in st.session_state.message_audios:
+                                        del st.session_state.message_audios[message_id]
+                                    st.rerun()
+                            except Exception as e:
+                                st.error(f"Audio playback error: {str(e)}")
+                                # Clean up corrupted audio
+                                if message_id in st.session_state.message_audios:
+                                    del st.session_state.message_audios[message_id]
 
 # Pending response review (Simplified HITL)
 if st.session_state.awaiting_approval and st.session_state.pending_response:
@@ -164,21 +212,28 @@ if st.session_state.awaiting_approval and st.session_state.pending_response:
             with col1:
                 if st.button("🔊 Listen", use_container_width=True, key="listen_pending_response"):
                     with st.spinner("Generating speech..."):
-                        audio_bytes = voice_integration.text_to_speech(
-                            st.session_state.pending_response, 
-                            st.session_state.selected_voice
-                        )
-                        if audio_bytes:
-                            st.session_state.pending_audio = audio_bytes
-                            st.rerun()
+                        try:
+                            audio_bytes = voice_integration.text_to_speech(
+                                st.session_state.pending_response, 
+                                st.session_state.selected_voice
+                            )
+                            if audio_bytes:
+                                st.session_state.pending_audio = audio_bytes
+                                st.rerun()
+                        except Exception as e:
+                            st.error(f"Audio generation failed: {str(e)}")
             
             # Display pending audio if available
             if st.session_state.pending_audio:
                 with col2:
-                    st.audio(st.session_state.pending_audio, format="audio/mp3")
-                    if st.button("❌ Clear", key="clear_pending_audio"):
+                    try:
+                        st.audio(st.session_state.pending_audio, format="audio/mp3")
+                        if st.button("❌ Clear", key="clear_pending_audio"):
+                            st.session_state.pending_audio = None
+                            st.rerun()
+                    except Exception as e:
+                        st.error(f"Audio playback error: {str(e)}")
                         st.session_state.pending_audio = None
-                        st.rerun()
         
         st.divider()
         
@@ -232,53 +287,62 @@ if st.session_state.awaiting_approval and st.session_state.pending_response:
                     st.session_state.show_feedback_form = False
                     st.rerun()
         
-        # Voice command section
-        if st.session_state.voice_enabled:
-            st.divider()
-            st.markdown("**🎤 Voice Commands**")
-            st.caption("Say 'yes' to approve or 'no' to request changes")
-            
-            audio_bytes = audio_recorder(
-                text="Voice Command",
-                recording_color="#e74c3c",
-                neutral_color="#34495e",
-                icon_name="microphone",
-                icon_size="1x",
-                key="voice_command_simple"
-            )
-            
-            if audio_bytes:
-                with st.spinner("Processing voice command..."):
-                    transcript = voice_integration.speech_to_text(audio_bytes, "audio/wav")
-                    
-                    if transcript:
-                        st.write(f"🎯 Heard: \"{transcript}\"")
-                        
-                        # Simple voice command processing
-                        transcript_lower = transcript.lower()
-                        
-                        if any(word in transcript_lower for word in ['yes', 'good', 'approve', 'happy', 'fine', 'ok']):
-                            st.session_state.messages.append(AIMessage(content=st.session_state.pending_response))
-                            st.session_state.pending_response = None
-                            st.session_state.awaiting_approval = False
-                            st.success("✅ Voice approved!")
-                            st.rerun()
-                        elif any(word in transcript_lower for word in ['no', 'change', 'improve', 'different', 'better']):
-                            st.session_state.show_feedback_form = True
-                            st.info("💭 Please provide feedback for improvement")
-                            st.rerun()
-                        elif any(word in transcript_lower for word in ['read', 'play', 'listen', 'hear']):
-                            st.info("🔊 Playing audio...")
-                            audio_bytes = voice_integration.text_to_speech(
-                                st.session_state.pending_response, 
-                                st.session_state.selected_voice
-                            )
-                            if audio_bytes:
-                                st.audio(audio_bytes, format="audio/mp3")
-                        else:
-                            st.warning(f"❓ Command not recognized. Say 'yes' to approve or 'no' to request changes.")
-                    else:
-                        st.error("❌ Could not understand voice command")
+            # Voice command section
+            if st.session_state.voice_enabled:
+                st.divider()
+                st.markdown("**🎤 Voice Commands**")
+                st.caption("Say 'yes' to approve or 'no' to request changes")
+                
+                # Use a unique key for voice commands to prevent conflicts
+                voice_command_key = f"voice_cmd_{st.session_state.audio_generation_counter}"
+                
+                audio_bytes = audio_recorder(
+                    text="Voice Command",
+                    recording_color="#e74c3c",
+                    neutral_color="#34495e",
+                    icon_name="microphone",
+                    icon_size="1x",
+                    key=voice_command_key
+                )
+                
+                if audio_bytes:
+                    with st.spinner("Processing voice command..."):
+                        try:
+                            transcript = voice_integration.speech_to_text(audio_bytes, "audio/wav")
+                            
+                            if transcript:
+                                st.write(f"🎯 Heard: \"{transcript}\"")
+                                
+                                # Simple voice command processing
+                                transcript_lower = transcript.lower()
+                                
+                                if any(word in transcript_lower for word in ['yes', 'good', 'approve', 'happy', 'fine', 'ok']):
+                                    st.session_state.messages.append(AIMessage(content=st.session_state.pending_response))
+                                    st.session_state.pending_response = None
+                                    st.session_state.awaiting_approval = False
+                                    st.success("✅ Voice approved!")
+                                    st.rerun()
+                                elif any(word in transcript_lower for word in ['no', 'change', 'improve', 'different', 'better']):
+                                    st.session_state.show_feedback_form = True
+                                    st.info("💭 Please provide feedback for improvement")
+                                    st.rerun()
+                                elif any(word in transcript_lower for word in ['read', 'play', 'listen', 'hear']):
+                                    st.info("🔊 Playing audio...")
+                                    try:
+                                        audio_bytes = voice_integration.text_to_speech(
+                                            st.session_state.pending_response, 
+                                            st.session_state.selected_voice
+                                        )
+                                        if audio_bytes:
+                                            st.audio(audio_bytes, format="audio/mp3")
+                                    except Exception as e:
+                                        st.error(f"Audio generation failed: {str(e)}")
+                                else:
+                                    st.warning(f"❓ Command not recognized. Say 'yes' to approve or 'no' to request changes.")
+                            else:
+                                st.error("❌ Could not understand voice command")
+                        except Exception as e:
+                            st.error(f"Voice processing error: {str(e)}")
 
 # Chat input
 if not st.session_state.awaiting_approval:
@@ -294,21 +358,28 @@ if not st.session_state.awaiting_approval:
     if st.session_state.voice_enabled:
         with col2:
             st.markdown("**🎤 Voice Input**")
+            
+            # Use a unique key for voice input to prevent conflicts
+            voice_input_key = f"voice_input_{st.session_state.audio_generation_counter}"
+            
             audio_bytes = audio_recorder(
                 text="Record",
                 recording_color="#e74c3c",
                 neutral_color="#34495e",
                 icon_name="microphone",
                 icon_size="1x",
-                key="voice_input"
+                key=voice_input_key
             )
             
             if audio_bytes:
                 with st.spinner("Converting speech to text..."):
-                    transcript = voice_integration.speech_to_text(audio_bytes, "audio/wav")
-                    if transcript:
-                        user_input = transcript
-                        st.success(f"🎤 Voice input: \"{transcript}\"")
+                    try:
+                        transcript = voice_integration.speech_to_text(audio_bytes, "audio/wav")
+                        if transcript:
+                            user_input = transcript
+                            st.success(f"🎤 Voice input: \"{transcript}\"")
+                    except Exception as e:
+                        st.error(f"Speech recognition failed: {str(e)}")
     
     # Process user input
     if user_input:
@@ -344,8 +415,14 @@ if not st.session_state.awaiting_approval:
                 st.session_state.needs_regeneration = False
                 st.session_state.user_improvement_feedback = None
             
-            # Generate response
-            result = chat_node(current_state)
+            # Generate response using graph (includes remember node for LTM)
+            config = {
+                "configurable": {
+                    "thread_id": st.session_state.session_id,
+                    "user_id": st.session_state.user_id
+                }
+            }
+            result = st.session_state.chat_graph.invoke(current_state, config)
             
             if result.get("pending_response"):
                 st.session_state.pending_response = result["pending_response"]
@@ -378,8 +455,14 @@ if not st.session_state.awaiting_approval:
                 "user_preferences": {}
             }
             
-            # Generate improved response
-            result = chat_node(current_state)
+            # Generate improved response using graph (includes remember node for LTM)
+            config = {
+                "configurable": {
+                    "thread_id": st.session_state.session_id,
+                    "user_id": st.session_state.user_id
+                }
+            }
+            result = st.session_state.chat_graph.invoke(current_state, config)
             
             if result.get("pending_response"):
                 st.session_state.pending_response = result["pending_response"]
