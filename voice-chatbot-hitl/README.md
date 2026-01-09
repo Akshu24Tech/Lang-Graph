@@ -17,6 +17,9 @@ This isn't just another chatbot. It's a **voice-first, human-supervised AI assis
 - 👤 **Human quality control** - You approve every response before it's sent
 - 🔄 **Iterative improvement** - Provide feedback to make responses better
 - 🎭 **Multiple personalities** - Choose from 10+ different AI voices
+- 🧠 **Dual Memory System** - Short-term (conversation) + Long-term (user info)
+- 💾 **Memory Management** - View, search, and delete stored memories
+- 🗄️ **Persistent Storage** - PostgreSQL integration for long-term memory
 
 ---
 
@@ -48,11 +51,16 @@ This isn't just another chatbot. It's a **voice-first, human-supervised AI assis
 
 ### 💬 **Enhanced Chat Experience**
 
-- **🧠 Persistent Memory**: Conversations continue across sessions
+- **🧠 Dual Memory System**: 
+  - **STM (Short Term Memory)**: Maintains conversation history per session
+  - **LTM (Long Term Memory)**: Stores persistent user information (name, preferences, projects)
+- **💾 Memory Management**: View, search, and delete stored memories via UI
 - **🎵 Individual Audio**: Each message has its own unique audio
 - **⚡ Real-time Interface**: Responsive Streamlit-based UI
 - **📊 Session Analytics**: Track your conversation statistics
 - **🔄 Smart Regeneration**: AI learns from rejections and feedback
+- **🎯 Personalized Responses**: AI uses stored memories to personalize interactions
+- **🗄️ PostgreSQL Support**: Optional persistent storage for long-term memories
 
 ---
 
@@ -61,36 +69,64 @@ This isn't just another chatbot. It's a **voice-first, human-supervised AI assis
 ### **LangGraph Workflow Engine**
 ```mermaid
 graph TD
-    A[User Input] --> B[Chat Node]
-    B --> C[Human Review Node]
-    C --> D{Happy with result?}
-    D -->|Yes| E[Response Delivery Node]
-    D -->|No| F[Feedback Collection]
-    F --> B
-    E --> G[Final Response]
+    A[User Input] --> B[Remember Node]
+    B --> C[Chat Node]
+    C --> D[Human Review Node]
+    D --> E{Happy with result?}
+    E -->|Yes| F[Response Delivery Node]
+    E -->|No| G[Feedback Collection]
+    G --> C
+    F --> H[Final Response]
+    
+    B -.Extract LTM.-> I[(LTM Store)]
+    C -.Read LTM.-> I
+    B -.STM.-> J[(Checkpointer)]
+    C -.STM.-> J
 ```
 
 ### **Core Components**
 
 | Component | Purpose | Technology |
 |-----------|---------|------------|
-| **Chat Node** | AI response generation | OpenAI GPT-3.5-turbo |
+| **Remember Node** | Extract & store LTM memories | Google Gemini 2.5 Flash + LangGraph Store |
+| **Chat Node** | AI response generation with LTM personalization | Google Gemini 2.5 Flash |
 | **Human Review Node** | HITL approval workflow | Custom logic + Voice commands |
 | **Response Delivery Node** | Final response with audio | Deepgram Aura TTS |
 | **Voice Integration** | Speech processing | Deepgram Nova-2 + Aura |
-| **State Management** | Conversation persistence | LangGraph TypedDict |
+| **State Management** | Conversation persistence (STM) | LangGraph Checkpointer |
+| **Memory Store** | Long-term memory persistence | PostgreSQL or InMemoryStore |
+| **Memory Utils** | Memory viewing & deletion | Custom utility functions |
 
 ### **State Architecture**
 ```python
 class ChatState(TypedDict):
-    messages: List[BaseMessage]           # Conversation history
+    messages: List[BaseMessage]           # Conversation history (STM)
     pending_response: Optional[str]       # Response awaiting approval
-    human_approval: Optional[bool]        # Approval status
+    human_approval: Optional[bool]       # Approval status
     human_feedback: Optional[str]         # Improvement suggestions
-    voice_enabled: bool                   # Voice features toggle
-    selected_voice: str                   # Chosen voice model
-    message_audios: Dict[str, bytes]      # Individual message audio
+    improvement_request: Optional[str]    # Formatted improvement request
+    voice_enabled: bool                  # Voice features toggle
+    selected_voice: str                  # Chosen voice model
+    audio_responses: List[bytes]         # Audio versions of responses
+    thread_id: str                       # Session identifier (for STM)
+    user_preferences: Optional[dict]    # User preferences
 ```
+
+### **Memory Architecture**
+
+**Short Term Memory (STM):**
+- Managed by LangGraph's `InMemorySaver` checkpointer
+- Stores conversation history per `thread_id`
+- Persists within a session
+- Used for conversation context
+
+**Long Term Memory (LTM):**
+- Managed by LangGraph's Store (PostgreSQL or InMemory)
+- Stores user-specific information (name, preferences, projects)
+- Persists across sessions via `user_id`
+- Automatically extracted from conversations
+- Prevents duplicates
+- Used for personalization
 
 ---
 
@@ -98,7 +134,7 @@ class ChatState(TypedDict):
 
 ### **Prerequisites**
 - Python 3.8+
-- OpenAI API key
+- Google Gemini API key
 - Deepgram API key ([Get free credits](https://deepgram.com))
 
 ### **Installation**
@@ -111,9 +147,35 @@ cd voice-chatbot-hitl
 pip install -r requirements.txt
 
 # Configure API keys in .env
-OPENAI_API_KEY=your_openai_key_here
+GOOGLE_API_KEY=your_gemini_api_key_here
 DEEPGRAM_API_KEY=your_deepgram_key_here
+
+# Optional: PostgreSQL for persistent Long Term Memory (LTM)
+# If not set, will use in-memory storage (non-persistent)
+DATABASE_URL=postgresql://postgres:postgres@localhost:5442/postgres?sslmode=disable
 ```
+
+### **PostgreSQL Setup (Optional - for Persistent LTM)**
+
+For persistent Long Term Memory storage across sessions, set up PostgreSQL:
+
+**Option 1: Using Docker (Recommended)**
+```bash
+# Start PostgreSQL container
+docker-compose up -d
+
+# The database will be available at localhost:5442
+# Default credentials: postgres/postgres
+```
+
+**Option 2: Local PostgreSQL**
+- Install PostgreSQL locally
+- Create a database
+- Update `DATABASE_URL` in `.env` with your connection string
+
+**Format:** `postgresql://user:password@host:port/database?sslmode=disable`
+
+**Note:** If `DATABASE_URL` is not set, the system will use in-memory storage (non-persistent, data lost on restart).
 
 ### **Launch Options**
 
@@ -160,6 +222,13 @@ python app.py
 - **🗣️ Voice Input**: Speak instead of typing
 - **🎭 Voice Selection**: Choose from 10+ different voices
 
+### **5. Memory Management**
+- **👁️ View Memories**: Click "View Memories" in sidebar to see all stored LTM
+- **🔍 Search Memories**: Filter memories by typing in the search box
+- **🗑️ Delete Memory**: Click the delete button next to any memory
+- **🗑️ Delete All**: Remove all memories for the current user (with confirmation)
+- **📊 Memory Count**: See total number of stored memories in sidebar
+
 ---
 
 ## 🎤 **Voice Models Available**
@@ -187,10 +256,13 @@ voice-chatbot-hitl/
 ├── 🚀 streamlit_voice_chatbot.py    # Main web interface
 ├── 💻 app.py                        # CLI interface  
 ├── 🧠 state.py                      # Chat state management
-├── ⚙️ nodes.py                      # LangGraph workflow nodes
+├── ⚙️ nodes.py                      # LangGraph workflow nodes (chat, remember, review, delivery)
 ├── 🎤 voice_integration.py          # Deepgram voice processing
+├── 💾 memory_utils.py               # Memory viewing & deletion utilities
+├── 🗄️ db_config.py                 # Database configuration (PostgreSQL/InMemory)
+├── 🐳 docker-compose.yml            # PostgreSQL container setup
 ├── 📋 requirements.txt              # Python dependencies
-├── 🔐 .env                          # API keys configuration
+├── 🔐 .env                          # API keys & database configuration
 └── 📖 README.md                     # This documentation
 ```
 
@@ -210,10 +282,25 @@ Defines the conversation state structure using LangGraph's TypedDict pattern wit
 - HITL approval tracking
 
 #### **⚙️ nodes.py**
-Contains the three core workflow nodes:
-- `chat_node()` - AI response generation with feedback integration
+Contains the core workflow nodes:
+- `remember_node()` - Extracts and stores long-term memories from conversations
+- `chat_node()` - AI response generation with LTM personalization and feedback integration
 - `human_review_node()` - Simplified HITL approval process
 - `response_delivery_node()` - Final response delivery with audio
+
+#### **💾 memory_utils.py**
+Utility functions for memory management:
+- `get_user_memories()` - Retrieve all memories for a user
+- `delete_memory()` - Delete a specific memory
+- `delete_all_memories()` - Delete all memories for a user
+- `search_memories()` - Search memories by content
+- `get_memory_count()` - Get total number of memories
+
+#### **🗄️ db_config.py**
+Database configuration and store initialization:
+- `get_ltm_store()` - Returns PostgresStore or InMemoryStore based on configuration
+- Automatic fallback to InMemoryStore if PostgreSQL unavailable
+- Handles database setup and connection management
 
 #### **🎤 voice_integration.py**
 Handles all Deepgram interactions:
@@ -235,6 +322,18 @@ voice_model = st.selectbox("Voice Model", [
     "aura-orion-en",    # Deep male
     # ... more options
 ])
+```
+
+### **Memory Customization**
+```python
+# Modify memory extraction in nodes.py
+MEMORY_PROMPT = """Customize what gets stored as memories..."""
+
+# Adjust memory extraction LLM settings
+memory_llm = ChatGoogleGenerativeAI(
+    model="gemini-2.5-flash",
+    temperature=0  # Lower temperature for consistent extraction
+)
 ```
 
 ### **HITL Customization**
@@ -299,17 +398,22 @@ approve_patterns = [
 ## 🚀 **What's Next?**
 
 ### **Planned Enhancements**
-- 📊 **Analytics Dashboard**: Approval rates, voice usage stats
+- 📊 **Analytics Dashboard**: Approval rates, voice usage stats, memory analytics
 - 🌍 **Multi-language Support**: International voice models
 - 🤖 **Custom AI Models**: Fine-tuned models for specific domains
 - 👥 **Multi-user Support**: Team collaboration features
 - 📱 **Mobile App**: Native iOS/Android applications
+- 🔍 **Semantic Memory Search**: Vector-based memory search
+- 📈 **Memory Analytics**: Track memory growth, most common memories
+- 🔄 **Memory Export/Import**: Backup and restore memories
 
 ### **Integration Opportunities**
-- 💾 **Database Storage**: Persistent conversation history
+- 💾 **Database Storage**: ✅ Already implemented (PostgreSQL for LTM)
 - 🔗 **API Endpoints**: RESTful API for external integrations
 - 📈 **Business Intelligence**: Advanced analytics and reporting
 - 🎨 **Custom Themes**: Branded interface customization
+- 🔐 **Authentication**: User authentication and authorization
+- 🌐 **Multi-tenant Support**: Separate memory spaces per organization
 
 ---
 
@@ -341,6 +445,14 @@ pip install -r requirements-dev.txt  # If available
 python -m pytest tests/
 ```
 
+---
+
+## 📄 **License**
+
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+
+---
+
 ## 🙏 **Acknowledgments**
 
 ### **Inspiration & Learning Sources**
@@ -354,7 +466,7 @@ This project was inspired by and learned from:
 - 🎤 **Deepgram** for providing cutting-edge voice AI
 - 🦜 **LangChain** for the powerful LangGraph framework  
 - 🚀 **Streamlit** for making beautiful UIs simple
-- 🤖 **OpenAI** for the conversational AI capabilities
+- 🤖 **Google** for the Gemini AI capabilities
 
 ---
 
