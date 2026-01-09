@@ -1,8 +1,12 @@
+import os
+from dotenv import load_dotenv
 from langgraph.graph import StateGraph, END
 from langgraph.checkpoint.memory import InMemorySaver
-from langgraph.store.memory import InMemoryStore
 from state import ChatState
 from nodes import chat_node, human_review_node, response_delivery_node, remember_node
+from db_config import get_ltm_store
+
+load_dotenv()
 
 def should_continue_after_chat(state: ChatState):
     """Decide whether to continue after AI response generation."""
@@ -69,7 +73,8 @@ workflow.add_conditional_edges(
 memory = InMemorySaver()
 
 # LTM (Long Term Memory): Persistent user information across sessions
-ltm_store = InMemoryStore()
+# Uses PostgreSQL if DATABASE_URL is set, otherwise falls back to InMemoryStore
+ltm_store = get_ltm_store()
 
 # Compile with both STM (checkpointer) and LTM (store)
 app = workflow.compile(checkpointer=memory, store=ltm_store)
