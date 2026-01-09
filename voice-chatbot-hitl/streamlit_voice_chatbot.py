@@ -4,16 +4,17 @@ from audio_recorder_streamlit import audio_recorder
 from langchain_core.messages import HumanMessage, AIMessage
 from langgraph.graph import StateGraph, START, END
 from langgraph.checkpoint.memory import InMemorySaver
-from langgraph.store.memory import InMemoryStore
 from state import ChatState
 from nodes import chat_node, remember_node
 from voice_integration import voice_integration
+from db_config import get_ltm_store
 
 # Initialize STM (Short Term Memory) and LTM (Long Term Memory)
 if "checkpointer" not in st.session_state:
     st.session_state.checkpointer = InMemorySaver()
 if "ltm_store" not in st.session_state:
-    st.session_state.ltm_store = InMemoryStore()
+    # Uses PostgreSQL if DATABASE_URL is set, otherwise falls back to InMemoryStore
+    st.session_state.ltm_store = get_ltm_store()
 
 # Create a simple graph for Streamlit: remember -> chat
 if "chat_graph" not in st.session_state:
