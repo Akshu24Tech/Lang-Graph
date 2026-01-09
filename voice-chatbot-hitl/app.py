@@ -1,7 +1,8 @@
 from langgraph.graph import StateGraph, END
 from langgraph.checkpoint.memory import InMemorySaver
+from langgraph.store.memory import InMemoryStore
 from state import ChatState
-from nodes import chat_node, human_review_node, response_delivery_node
+from nodes import chat_node, human_review_node, response_delivery_node, remember_node
 
 def should_continue_after_chat(state: ChatState):
     """Decide whether to continue after AI response generation."""
@@ -25,12 +26,16 @@ def should_continue_after_delivery(state: ChatState):
 workflow = StateGraph(ChatState)
 
 # Add nodes
-workflow.add_node("chat", chat_node)
+workflow.add_node("remember", remember_node)  # LTM: Extract and store memories
+workflow.add_node("chat", chat_node)  # Generate response with LTM context
 workflow.add_node("human_review", human_review_node)
 workflow.add_node("deliver_response", response_delivery_node)
 
 # Set entry point
-workflow.set_entry_point("chat")
+workflow.set_entry_point("remember")
+
+# Add edges: remember -> chat (always go to chat after remembering)
+workflow.add_edge("remember", "chat")
 
 # Add conditional edges
 workflow.add_conditional_edges(
@@ -60,8 +65,14 @@ workflow.add_conditional_edges(
 )
 
 # Add persistence
+# STM (Short Term Memory): Conversation history per thread
 memory = InMemorySaver()
-app = workflow.compile(checkpointer=memory)
+
+# LTM (Long Term Memory): Persistent user information across sessions
+ltm_store = InMemoryStore()
+
+# Compile with both STM (checkpointer) and LTM (store)
+app = workflow.compile(checkpointer=memory, store=ltm_store)
 
 # Main execution
 if __name__ == "__main__":
@@ -69,7 +80,14 @@ if __name__ == "__main__":
     print("=" * 60)
     
     # Configuration
-    config = {"configurable": {"thread_id": "voice_chat_session_1"}}
+    # thread_id: For STM (conversation history per thread)
+    # user_id: For LTM (persistent user memories across all threads)
+    config = {
+        "configurable": {
+            "thread_id": "voice_chat_session_1",
+            "user_id": "user_1"  # Change this to identify different users
+        }
+    }
     
     while True:
         try:
