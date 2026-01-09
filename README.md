@@ -8,14 +8,14 @@ Welcome! This repository is a comprehensive look at building production-grade AI
 
 | Folder | Focus | Key Concepts Covered |
 | --- | --- | --- |
-| **[🚀 voice-chatbot-hitl (Main Project)](https://github.com/Akshu24Tech/Lang-Graph/blob/main/voice-chatbot-hitl/)** | **Integration & UI** | LangGraph + Deepgram + Streamlit + Human-in-the-Loop |
-| **[🧠 learning-material](https://github.com/Akshu24Tech/Lang-Graph/blob/main/learning-material/)** | **Core Logic** | State Reducers, Conditional Edges, Checkpoints, & Nodes |
+| **[🚀 voice-chatbot-hitl (Main Project)](https://www.google.com/search?q=./voice-chatbot-hitl/)** | **Integration & UI** | LangGraph + Deepgram + Streamlit + Human-in-the-Loop |
+| **[🧠 learning-material](https://www.google.com/search?q=./learning-material/)** | **Core Logic** | State Reducers, Conditional Edges, Checkpoints, & Nodes |
 
 ---
 
 ## 🧠 The LangGraph Learning Lab (Folder 1)
 
-Inside: [`/learning-material`](https://github.com/Akshu24Tech/Lang-Graph/blob/main/learning-material/)
+*Inside: [`/learning-material*`](https://www.google.com/search?q=./learning-material/)
 
 Before building the final application, I broke down the **LangGraph** framework into modular experiments. This folder contains individual files for each milestone:
 
@@ -29,18 +29,31 @@ Before building the final application, I broke down the **LangGraph** framework 
 
 ## 🚀 The Final Project: Voice Chatbot (Folder 2)
 
-Inside: [`/voice-chatbot-hitl`](https://github.com/Akshu24Tech/Lang-Graph/blob/main/voice-chatbot-hitl/)
+*Inside: [`/voice-chatbot-hitl*`](https://www.google.com/search?q=./voice-chatbot-hitl/)
 
-This is the culmination of the concepts practiced in the lab. It takes the robust LangGraph logic and wraps it in a **Voice-First** interface.
+This is the culmination of the concepts practiced in the lab. It takes the robust LangGraph logic and wraps it in a **Voice-First** interface with **advanced memory capabilities**.
 
 ### **Technical Stack:**
 
 * **Orchestration:** LangGraph (Stateful Multi-Actor applications)
 * **Voice AI:** Deepgram Nova-2 (STT) & Aura (TTS)
 * **Interface:** Streamlit
-* **LLM:** OpenAI GPT models
+* **LLM:** Google Gemini 2.5 Flash
+* **Memory System:** STM (Short Term Memory) + LTM (Long Term Memory)
+* **Storage:** PostgreSQL (persistent) or InMemory (development)
 
-👉 **[Explore the Full Project README](https://github.com/Akshu24Tech/Lang-Graph/blob/main/voice-chatbot-hitl/README.md)** for installation steps and architectural diagrams.
+### **Key Features:**
+
+* 🗣️ **Voice-First Interface** - Speak naturally, listen to responses
+* 👤 **Human-in-the-Loop** - Approve every AI response before delivery
+* 🧠 **Dual Memory System**:
+  - **STM (Short Term Memory)**: Conversation history per session
+  - **LTM (Long Term Memory)**: Persistent user information across sessions
+* 💾 **Memory Management**: View, search, and delete stored memories
+* 🗄️ **PostgreSQL Integration**: Optional persistent storage for LTM
+* 🔄 **Smart Personalization**: AI remembers user preferences and context
+
+👉 **[Explore the Full Project README](https://www.google.com/search?q=./voice-chatbot-hitl/)** for installation steps and architectural diagrams.
 
 ---
 
@@ -49,11 +62,13 @@ This is the culmination of the concepts practiced in the lab. It takes the robus
 * **Agentic Workflows:** Designing complex AI logic that isn't just a simple prompt-response.
 * **HITL Design:** Creating systems where humans can intercept and correct AI behavior.
 * **Multimodal AI:** Integrating voice and text for better accessibility.
+* **Memory Systems:** Implementing dual memory architecture (STM + LTM) for intelligent personalization.
+* **Database Integration:** PostgreSQL integration for persistent memory storage.
 
 ---
 
 ## 🤝 Connect with Me
 
-**Akshu Grewal** *AI/ML Enthusiast & Agentic AI Developer* [akshug2004@gmail.com]
+**Akshu Grewal** *AI/ML & Agentic AI Developer* [akshug2004@gmail.com]
 
 ---
