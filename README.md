@@ -8,14 +8,14 @@ Welcome! This repository is a comprehensive look at building production-grade AI
 
 | Folder | Focus | Key Concepts Covered |
 | --- | --- | --- |
-| **[🚀 voice-chatbot-hitl (Main Project)](https://www.google.com/search?q=./voice-chatbot-hitl/)** | **Integration & UI** | LangGraph + Deepgram + Streamlit + Human-in-the-Loop |
-| **[🧠 learning-material](https://www.google.com/search?q=./learning-material/)** | **Core Logic** | State Reducers, Conditional Edges, Checkpoints, & Nodes |
+| **[🚀 voice-chatbot-hitl (Main Project)](https://github.com/Akshu24Tech/Lang-Graph/blob/main/voice-chatbot-hitl/)** | **Integration & UI** | LangGraph + Deepgram + Streamlit + Human-in-the-Loop |
+| **[🧠 learning-material](https://github.com/Akshu24Tech/Lang-Graph/blob/main/learning-material/)** | **Core Logic** | State Reducers, Conditional Edges, Checkpoints, & Nodes |
 
 ---
 
 ## 🧠 The LangGraph Learning Lab (Folder 1)
 
-*Inside: [`/learning-material*`](https://www.google.com/search?q=./learning-material/)
+Inside: [`/learning-material`](https://github.com/Akshu24Tech/Lang-Graph/blob/main/learning-material/)
 
 Before building the final application, I broke down the **LangGraph** framework into modular experiments. This folder contains individual files for each milestone:
 
@@ -29,7 +29,7 @@ Before building the final application, I broke down the **LangGraph** framework 
 
 ## 🚀 The Final Project: Voice Chatbot (Folder 2)
 
-*Inside: [`/voice-chatbot-hitl*`](https://www.google.com/search?q=./voice-chatbot-hitl/)
+Inside: [`/voice-chatbot-hitl`](https://github.com/Akshu24Tech/Lang-Graph/blob/main/voice-chatbot-hitl/)
 
 This is the culmination of the concepts practiced in the lab. It takes the robust LangGraph logic and wraps it in a **Voice-First** interface with **advanced memory capabilities**.
 
@@ -53,7 +53,7 @@ This is the culmination of the concepts practiced in the lab. It takes the robus
 * 🗄️ **PostgreSQL Integration**: Optional persistent storage for LTM
 * 🔄 **Smart Personalization**: AI remembers user preferences and context
 
-👉 **[Explore the Full Project README](https://www.google.com/search?q=./voice-chatbot-hitl/)** for installation steps and architectural diagrams.
+👉 **[Explore the Full Project README](https://github.com/Akshu24Tech/Lang-Graph/blob/main/voice-chatbot-hitl/README.md)** for installation steps and architectural diagrams.
 
 ---
 
