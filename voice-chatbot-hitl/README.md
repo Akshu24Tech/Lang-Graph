@@ -277,14 +277,6 @@ voice-chatbot-hitl/
 │       └── memory_utils.py          # Memory viewing & deletion utilities
 ├── 🚀 streamlit_voice_chatbot.py    # Main web interface
 ├── 💻 app.py                        # CLI interface  
-<<<<<<< HEAD
-=======
-├── 🧠 state.py                      # Chat state management
-├── ⚙️ nodes.py                      # LangGraph workflow nodes (chat, remember, review, delivery)
-├── 🎤 voice_integration.py          # Deepgram voice processing
-├── 💾 memory_utils.py               # Memory viewing & deletion utilities
-├── 🗄️ db_config.py                 # Database configuration (PostgreSQL/InMemory)
->>>>>>> a77a1f89641903a2049efb07198210d48e967344
 ├── 🐳 docker-compose.yml            # PostgreSQL container setup
 ├── 📋 requirements.txt              # Python dependencies
 ├── 🔐 .env                          # API keys & database configuration
