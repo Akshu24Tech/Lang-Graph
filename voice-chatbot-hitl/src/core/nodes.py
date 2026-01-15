@@ -7,8 +7,9 @@ from langchain_google_genai import ChatGoogleGenerativeAI
 from langchain_core.messages import SystemMessage, HumanMessage, AIMessage
 from langchain_core.runnables import RunnableConfig
 from langgraph.store.base import BaseStore
-from state import ChatState
-from voice_integration import voice_integration
+from src.core.state import ChatState
+from src.integrations.voice_integration import voice_integration
+from src.skills.skills import enhance_user_prompt
 
 load_dotenv()
 
@@ -190,8 +191,20 @@ def chat_node(state: ChatState, config: RunnableConfig = None, *, store: BaseSto
             # For regeneration, use the improvement request
             llm_messages = [system_message, HumanMessage(content=improvement_request)]
         else:
-            # For new conversations, use full history
-            llm_messages = [system_message] + messages
+            # For new conversations, enhance the latest user message with skills
+            # Apply skills to the most recent user message to improve response quality
+            enhanced_messages = []
+            for i, msg in enumerate(messages):
+                if isinstance(msg, HumanMessage) and i == len(messages) - 1:
+                    # This is the latest user message - enhance it with skills
+                    enhanced_content = enhance_user_prompt(msg.content)
+                    enhanced_messages.append(HumanMessage(content=enhanced_content))
+                    print(f"✨ Enhanced user prompt with agent skills")
+                else:
+                    # Keep other messages as-is
+                    enhanced_messages.append(msg)
+            
+            llm_messages = [system_message] + enhanced_messages
         
         # Generate response
         response = llm.invoke(llm_messages)

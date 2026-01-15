@@ -4,16 +4,18 @@ from audio_recorder_streamlit import audio_recorder
 from langchain_core.messages import HumanMessage, AIMessage
 from langgraph.graph import StateGraph, START, END
 from langgraph.checkpoint.memory import InMemorySaver
-from langgraph.store.memory import InMemoryStore
-from state import ChatState
-from nodes import chat_node, remember_node
-from voice_integration import voice_integration
+from src.core.state import ChatState
+from src.core.nodes import chat_node, remember_node
+from src.integrations.voice_integration import voice_integration
+from src.integrations.db_config import get_ltm_store
+from src.utils.memory_utils import get_user_memories, delete_memory, delete_all_memories, search_memories, get_memory_count
 
 # Initialize STM (Short Term Memory) and LTM (Long Term Memory)
 if "checkpointer" not in st.session_state:
     st.session_state.checkpointer = InMemorySaver()
 if "ltm_store" not in st.session_state:
-    st.session_state.ltm_store = InMemoryStore()
+    # Uses PostgreSQL if DATABASE_URL is set, otherwise falls back to InMemoryStore
+    st.session_state.ltm_store = get_ltm_store()
 
 # Create a simple graph for Streamlit: remember -> chat
 if "chat_graph" not in st.session_state:
@@ -143,6 +145,92 @@ with st.sidebar:
     
     # Chat statistics
     st.metric("Messages", len(st.session_state.messages))
+    
+    # Memory count
+    try:
+        memory_count = get_memory_count(st.session_state.ltm_store, st.session_state.user_id)
+        st.metric("💾 Memories", memory_count)
+    except:
+        st.metric("💾 Memories", 0)
+    
+    st.divider()
+    
+    # Memory Management Section
+    st.subheader("💾 Memory Management")
+    
+    # Initialize memory view state
+    if "show_memories" not in st.session_state:
+        st.session_state.show_memories = False
+    if "memory_search_term" not in st.session_state:
+        st.session_state.memory_search_term = ""
+    
+    # Toggle memory view
+    if st.button("👁️ View Memories", use_container_width=True):
+        st.session_state.show_memories = not st.session_state.show_memories
+        st.rerun()
+    
+    # Display memories if enabled
+    if st.session_state.show_memories:
+        try:
+            # Search functionality
+            search_term = st.text_input(
+                "🔍 Search memories",
+                value=st.session_state.memory_search_term,
+                placeholder="Type to search...",
+                key="memory_search_input"
+            )
+            st.session_state.memory_search_term = search_term
+            
+            # Get memories (filtered if search term exists)
+            if search_term.strip():
+                memories = search_memories(st.session_state.ltm_store, st.session_state.user_id, search_term)
+            else:
+                memories = get_user_memories(st.session_state.ltm_store, st.session_state.user_id)
+            
+            if memories:
+                st.write(f"**Found {len(memories)} memory(ies):**")
+                
+                # Display each memory with delete option
+                for idx, memory in enumerate(memories):
+                    with st.container():
+                        col1, col2 = st.columns([4, 1])
+                        with col1:
+                            st.markdown(f"**{idx + 1}.** {memory['data']}")
+                            st.caption(f"ID: `{memory['id'][:8]}...`")
+                        with col2:
+                            delete_key = f"delete_memory_{memory['id']}_{idx}"
+                            if st.button("🗑️", key=delete_key, help="Delete this memory"):
+                                if delete_memory(st.session_state.ltm_store, st.session_state.user_id, memory['id']):
+                                    st.success(f"✅ Memory deleted: {memory['data'][:50]}...")
+                                    st.rerun()
+                                else:
+                                    st.error("❌ Failed to delete memory")
+                        st.divider()
+                
+                # Delete all button
+                st.markdown("---")
+                if st.button("🗑️ Delete All Memories", use_container_width=True, type="secondary"):
+                    st.warning("⚠️ This will delete ALL memories for this user. This action cannot be undone!")
+                    col1, col2 = st.columns(2)
+                    with col1:
+                        if st.button("✅ Confirm Delete All", use_container_width=True, type="primary"):
+                            if delete_all_memories(st.session_state.ltm_store, st.session_state.user_id):
+                                st.success("✅ All memories deleted successfully!")
+                                st.rerun()
+                            else:
+                                st.error("❌ Failed to delete all memories")
+                    with col2:
+                        if st.button("❌ Cancel", use_container_width=True):
+                            st.rerun()
+            else:
+                if search_term.strip():
+                    st.info(f"🔍 No memories found matching '{search_term}'")
+                else:
+                    st.info("💭 No memories stored yet. Start chatting and the AI will remember information about you!")
+                    
+        except Exception as e:
+            st.error(f"❌ Error loading memories: {str(e)}")
+            st.exception(e)
 
 # Main chat interface
 st.subheader("💬 Chat")
