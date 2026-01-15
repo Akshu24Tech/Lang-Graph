@@ -2,15 +2,9 @@ import os
 from dotenv import load_dotenv
 from langgraph.graph import StateGraph, END
 from langgraph.checkpoint.memory import InMemorySaver
-<<<<<<< HEAD
 from src.core.state import ChatState
 from src.core.nodes import chat_node, human_review_node, response_delivery_node, remember_node
 from src.integrations.db_config import get_ltm_store
-=======
-from state import ChatState
-from nodes import chat_node, human_review_node, response_delivery_node, remember_node
-from db_config import get_ltm_store
->>>>>>> a77a1f89641903a2049efb07198210d48e967344
 
 load_dotenv()
 
