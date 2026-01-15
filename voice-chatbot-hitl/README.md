@@ -18,7 +18,10 @@ This isn't just another chatbot. It's a **voice-first, human-supervised AI assis
 - 🔄 **Iterative improvement** - Provide feedback to make responses better
 - 🎭 **Multiple personalities** - Choose from 10+ different AI voices
 - 🧠 **Dual Memory System** - Short-term (conversation) + Long-term (user info)
+<<<<<<< HEAD
 - 🎯 **Agent Skills** - Auto-enhance prompts with professional meta-instructions
+=======
+>>>>>>> a77a1f89641903a2049efb07198210d48e967344
 - 💾 **Memory Management** - View, search, and delete stored memories
 - 🗄️ **Persistent Storage** - PostgreSQL integration for long-term memory
 
@@ -55,11 +58,14 @@ This isn't just another chatbot. It's a **voice-first, human-supervised AI assis
 - **🧠 Dual Memory System**: 
   - **STM (Short Term Memory)**: Maintains conversation history per session
   - **LTM (Long Term Memory)**: Stores persistent user information (name, preferences, projects)
+<<<<<<< HEAD
 - **🎯 Agent Skills System**:
   - **Automatic Prompt Enhancement**: Transforms basic prompts into professional requests
   - **Meta-Instructions**: Adds step-by-step reasoning, expert writing, pattern recognition
   - **Configurable Skills**: Enable/disable skills via `skills.md` configuration file
   - **Quality Boost**: Eliminates AI cliches, ensures authoritative, concise responses
+=======
+>>>>>>> a77a1f89641903a2049efb07198210d48e967344
 - **💾 Memory Management**: View, search, and delete stored memories via UI
 - **🎵 Individual Audio**: Each message has its own unique audio
 - **⚡ Real-time Interface**: Responsive Streamlit-based UI
@@ -277,6 +283,14 @@ voice-chatbot-hitl/
 │       └── memory_utils.py          # Memory viewing & deletion utilities
 ├── 🚀 streamlit_voice_chatbot.py    # Main web interface
 ├── 💻 app.py                        # CLI interface  
+<<<<<<< HEAD
+=======
+├── 🧠 state.py                      # Chat state management
+├── ⚙️ nodes.py                      # LangGraph workflow nodes (chat, remember, review, delivery)
+├── 🎤 voice_integration.py          # Deepgram voice processing
+├── 💾 memory_utils.py               # Memory viewing & deletion utilities
+├── 🗄️ db_config.py                 # Database configuration (PostgreSQL/InMemory)
+>>>>>>> a77a1f89641903a2049efb07198210d48e967344
 ├── 🐳 docker-compose.yml            # PostgreSQL container setup
 ├── 📋 requirements.txt              # Python dependencies
 ├── 🔐 .env                          # API keys & database configuration
@@ -310,6 +324,7 @@ Command-line interface for the chatbot:
 - Audio storage per message
 - HITL approval tracking
 
+<<<<<<< HEAD
 **`nodes.py`** - LangGraph workflow nodes:
 - `remember_node()` - Extracts and stores long-term memories from conversations
 - `chat_node()` - AI response generation with LTM personalization and skills enhancement
@@ -319,6 +334,31 @@ Command-line interface for the chatbot:
 #### **`src/integrations/` - External Services**
 
 **`voice_integration.py`** - Deepgram voice processing:
+=======
+#### **⚙️ nodes.py**
+Contains the core workflow nodes:
+- `remember_node()` - Extracts and stores long-term memories from conversations
+- `chat_node()` - AI response generation with LTM personalization and feedback integration
+- `human_review_node()` - Simplified HITL approval process
+- `response_delivery_node()` - Final response delivery with audio
+
+#### **💾 memory_utils.py**
+Utility functions for memory management:
+- `get_user_memories()` - Retrieve all memories for a user
+- `delete_memory()` - Delete a specific memory
+- `delete_all_memories()` - Delete all memories for a user
+- `search_memories()` - Search memories by content
+- `get_memory_count()` - Get total number of memories
+
+#### **🗄️ db_config.py**
+Database configuration and store initialization:
+- `get_ltm_store()` - Returns PostgresStore or InMemoryStore based on configuration
+- Automatic fallback to InMemoryStore if PostgreSQL unavailable
+- Handles database setup and connection management
+
+#### **🎤 voice_integration.py**
+Handles all Deepgram interactions:
+>>>>>>> a77a1f89641903a2049efb07198210d48e967344
 - Text-to-speech with multiple voice models
 - Speech-to-text for voice input
 - Voice command processing

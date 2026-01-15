@@ -7,4 +7,8 @@ deepgram-sdk
 audio-recorder-streamlit
 requests
 psycopg[binary,pool]
+<<<<<<< HEAD
 langgraph-checkpoint-postgres
+=======
+langgraph-checkpoint-postgres
+>>>>>>> a77a1f89641903a2049efb07198210d48e967344
