@@ -8,3 +8,4 @@ audio-recorder-streamlit
 requests
 psycopg[binary,pool]
 langgraph-checkpoint-postgres
+tavily-python
