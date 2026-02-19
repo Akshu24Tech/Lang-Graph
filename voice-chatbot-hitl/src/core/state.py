@@ -18,3 +18,14 @@ class ChatState(TypedDict):
     # Session management
     thread_id: str                       # Unique thread identifier
     user_preferences: Optional[dict]     # User preferences and settings
+    # Tavily features
+    tavily_route: Optional[str]          # Which Tavily feature to use
+    tavily_results: Optional[dict]       # Results from Tavily operations
+    target_company: Optional[str]        # Company name for research
+    lead_name: Optional[str]             # Person name for lead enrichment
+    lead_company: Optional[str]          # Company for lead enrichment
+    linkedin_url: Optional[str]          # LinkedIn URL for lead enrichment
+    news_topics: Optional[List[str]]     # Topics for news monitoring
+    company_research: Optional[dict]     # Company research data
+    lead_data: Optional[dict]            # Enriched lead data
+    news_brief: Optional[dict]           # Daily news brief
