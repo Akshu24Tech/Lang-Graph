@@ -26,6 +26,28 @@ This isn't just another chatbot. It's a **voice-first, human-supervised AI assis
 
 ## 🚀 **Key Features**
 
+### 🌐 **NEW: Tavily Intelligence Integration** 🎯
+Transform your chatbot into a live intelligence agent with real-time web research capabilities:
+
+- **🎯 Internship Hunter**: Find latest AI/ML internships from LinkedIn, Glassdoor, Indeed
+- **🏢 Company Deep Dive**: Comprehensive company research for interview preparation
+- **🔍 Lead Enrichment**: Research people for networking and personalized outreach
+- **📰 News Monitor**: Daily AI/ML news briefs from trusted sources
+
+**Quick Start with Tavily:**
+```bash
+# Add to .env
+TAVILY_API_KEY=tvly-your-key-here
+
+# Run enhanced app
+python app_with_tavily.py
+
+# Or use the beautiful Streamlit UI
+streamlit run streamlit_tavily_app.py
+```
+
+📚 **[Full Tavily Integration Guide →](./TAVILY_INTEGRATION.md)** | 🚀 **[Quick Start →](./QUICKSTART_TAVILY.md)**
+
 ### 🎤 **Voice-First Experience**
 ```
 🗣️ You speak → 🤖 AI understands → 💭 AI responds → 👂 You listen → ✅ You approve
@@ -185,13 +207,25 @@ docker-compose up -d
 
 ### **Launch Options**
 
-#### 🖥️ **Web Interface (Recommended)**
+#### 🌐 **Tavily-Powered Web Interface (NEW!)**
+```bash
+streamlit run streamlit_tavily_app.py
+```
+*Beautiful UI for internship hunting, company research, and more*
+
+#### 🎤 **Tavily-Powered CLI (NEW!)**
+```bash
+python app_with_tavily.py
+```
+*Command-line interface with Tavily intelligence*
+
+#### 🖥️ **Standard Web Interface**
 ```bash
 streamlit run streamlit_voice_chatbot.py
 ```
 *Opens at: http://localhost:8501*
 
-#### 💻 **Command Line Interface**
+#### 💻 **Standard Command Line Interface**
 ```bash
 python app.py
 ```
