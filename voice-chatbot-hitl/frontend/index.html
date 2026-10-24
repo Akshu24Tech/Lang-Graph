@@ -650,7 +650,8 @@
 
   <script>
     // Automatically fall back to local server if running locally (localhost or file protocol)
-    const API = "https://voice-chatbot-backend-gq2y.onrender.com";
+    const isLocal = window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1" || window.location.protocol === "file:";
+    const API = isLocal ? "http://localhost:8000" : "https://voice-chatbot-backend-gq2y.onrender.com";
 
     // --- Auth state ---
     let token = localStorage.getItem("voice_chatbot_token");

@@ -1,48 +1,60 @@
-"""
-Simple email/password authentication so memory follows a real account,
-not a random per-browser ID. Requires DATABASE_URL (Postgres) — same
-connection your LTM store already uses.
-"""
-
 import os
 import time
+import sqlite3
 import bcrypt
 import jwt
-import psycopg
 from fastapi import Header, HTTPException
+
+try:
+    import psycopg
+except ImportError:
+    psycopg = None
 
 SECRET_KEY = os.getenv("JWT_SECRET_KEY", "dev-insecure-secret-change-me-in-production")
 ALGORITHM = "HS256"
 TOKEN_TTL_SECONDS = 60 * 60 * 24 * 30  # 30 days
 
 DATABASE_URL = os.getenv("DATABASE_URL")
+SQLITE_DB_PATH = os.path.join(os.path.dirname(__file__), "..", "local_users.db")
 
 
 def _get_conn():
-    if not DATABASE_URL:
-        raise RuntimeError(
-            "DATABASE_URL is required for login/signup — set it to your Postgres connection string."
-        )
-    return psycopg.connect(DATABASE_URL, autocommit=True)
+    if DATABASE_URL and psycopg:
+        try:
+            return ("postgres", psycopg.connect(DATABASE_URL, autocommit=True, connect_timeout=3))
+        except Exception as e:
+            print(f"[INFO] Postgres connection failed ({e}). Falling back to local SQLite auth.")
+    return ("sqlite", sqlite3.connect(SQLITE_DB_PATH))
 
 
 def init_users_table():
     """Idempotent — safe to call on every startup."""
-    if not DATABASE_URL:
-        print(" DATABASE_URL not set — signup/login will not work until it's configured.")
-        return
-    with _get_conn() as conn:
-        conn.execute(
-            """
-            CREATE TABLE IF NOT EXISTS app_users (
-                id SERIAL PRIMARY KEY,
-                email TEXT UNIQUE NOT NULL,
-                password_hash TEXT NOT NULL,
-                created_at TIMESTAMPTZ DEFAULT now()
+    db_type, conn = _get_conn()
+    with conn:
+        if db_type == "postgres":
+            conn.execute(
+                """
+                CREATE TABLE IF NOT EXISTS app_users (
+                    id SERIAL PRIMARY KEY,
+                    email TEXT UNIQUE NOT NULL,
+                    password_hash TEXT NOT NULL,
+                    created_at TIMESTAMPTZ DEFAULT now()
+                )
+                """
             )
-            """
-        )
-    print("Users table ready")
+            print("[OK] Postgres Users table ready")
+        else:
+            conn.execute(
+                """
+                CREATE TABLE IF NOT EXISTS app_users (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    email TEXT UNIQUE NOT NULL,
+                    password_hash TEXT NOT NULL,
+                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                )
+                """
+            )
+            print("[OK] SQLite Users table ready (local fallback)")
 
 
 def hash_password(password: str) -> str:
@@ -57,25 +69,41 @@ def create_user(email: str, password: str) -> str:
     """Returns the new user's stable id, formatted as 'user_<n>'."""
     email = email.lower().strip()
     password_hash = hash_password(password)
-    with _get_conn() as conn:
+    db_type, conn = _get_conn()
+    with conn:
         try:
-            cur = conn.execute(
-                "INSERT INTO app_users (email, password_hash) VALUES (%s, %s) RETURNING id",
-                (email, password_hash),
-            )
-            new_id = cur.fetchone()[0]
+            if db_type == "postgres":
+                cur = conn.execute(
+                    "INSERT INTO app_users (email, password_hash) VALUES (%s, %s) RETURNING id",
+                    (email, password_hash),
+                )
+                new_id = cur.fetchone()[0]
+            else:
+                cur = conn.execute(
+                    "INSERT INTO app_users (email, password_hash) VALUES (?, ?)",
+                    (email, password_hash),
+                )
+                new_id = cur.lastrowid
             return f"user_{new_id}"
-        except psycopg.errors.UniqueViolation:
-            raise ValueError("An account with this email already exists.")
+        except Exception as e:
+            if "unique" in str(e).lower():
+                raise ValueError("An account with this email already exists.")
+            raise e
 
 
 def authenticate_user(email: str, password: str) -> str:
     """Returns the user's stable id if credentials are correct."""
     email = email.lower().strip()
-    with _get_conn() as conn:
-        cur = conn.execute(
-            "SELECT id, password_hash FROM app_users WHERE email = %s", (email,)
-        )
+    db_type, conn = _get_conn()
+    with conn:
+        if db_type == "postgres":
+            cur = conn.execute(
+                "SELECT id, password_hash FROM app_users WHERE email = %s", (email,)
+            )
+        else:
+            cur = conn.execute(
+                "SELECT id, password_hash FROM app_users WHERE email = ?", (email,)
+            )
         row = cur.fetchone()
         if not row or not verify_password(password, row[1]):
             raise ValueError("Invalid email or password.")
