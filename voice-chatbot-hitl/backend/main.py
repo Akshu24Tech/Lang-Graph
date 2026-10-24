@@ -338,3 +338,16 @@ def approve(req: ApproveRequest, user_id: str = Depends(get_current_user_id)):
 @app.get("/health")
 def health():
     return {"status": "ok"}
+
+
+# Mount static frontend so http://localhost:8000 opens the app directly
+frontend_dir = os.path.join(os.path.dirname(__file__), "..", "frontend")
+if os.path.exists(frontend_dir):
+    from fastapi.staticfiles import StaticFiles
+    from fastapi.responses import FileResponse
+
+    @app.get("/")
+    def serve_index():
+        return FileResponse(os.path.join(frontend_dir, "index.html"))
+
+    app.mount("/static", StaticFiles(directory=frontend_dir), name="static")
