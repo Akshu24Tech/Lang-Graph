@@ -3,6 +3,13 @@
 An intelligent, voice-first chatbot assistant combining **FastAPI**, **LangGraph workflows**, **Deepgram voice technology**, **Tavily search intelligence**, and a **Human-in-the-Loop (HITL)** review gate. 
 
 This version features **Account Authentication**, allowing your long-term memories to securely follow your profile across different browsers and devices.
+ 
+---
+
+## 🎬 Live System Walkthrough Demo
+
+> ▶️ **Direct Video Link:** [`Voice_agent.mp4`](./Voice_agent.mp4)  
+> *Demonstrates live voice interaction, memory persistence, and Human-in-the-Loop review approval in action.*
 
 ---
 

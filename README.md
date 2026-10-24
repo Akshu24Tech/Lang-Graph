@@ -10,6 +10,16 @@ A production-grade, voice-first agentic system designed to eliminate LLM halluci
 
 ---
 
+## 🎬 Live System Walkthrough & HITL Verification Demo
+
+https://github.com/user-attachments/assets/Voice_agent.mp4
+
+> **Watch the full demonstration:**  
+> ▶️ **[Click here to watch / download Voice_agent.mp4](file:///e:/Ghost%20OS/projects/Lang-Graph/voice-chatbot-hitl/Voice_agent.mp4)** *(or view directly in repo at `voice-chatbot-hitl/Voice_agent.mp4`)*  
+> *Demonstrates: Account authentication, dynamic speech-to-text, context extraction into LTM, deterministic HITL Review Gate interruption, operator approval, and sub-second text-to-speech delivery.*
+
+---
+
 ## 🎯 The Core Problem & Architectural Philosophy
 
 Most conversational AI assistants fail in enterprise environments for two simple reasons:
