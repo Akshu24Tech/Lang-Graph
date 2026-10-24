@@ -435,3 +435,86 @@ def create_lead_enricher() -> LeadEnricher:
 def create_news_monitor() -> NewsMonitor:
     """Create NewsMonitor instance."""
     return NewsMonitor(get_tavily_client())
+
+
+class GeneralSearchAssistant:
+    """
+    General-purpose web search, for anything that doesn't fit the fixed
+    internship/company/lead/news categories. This is what makes Tavily usable
+    for ANY chatbot query needing current information, not just the 4 fixed flows.
+    """
+
+    def __init__(self, tavily_client: TavilyClient):
+        self.client = tavily_client
+
+    def quick_search(
+        self,
+        query: str,
+        max_results: int = 5,
+        time_range: Optional[str] = None
+    ) -> Dict[str, Any]:
+        """
+        Fast, general web search for a factual or current-info question.
+
+        Args:
+            query: The user's question or topic, as-is
+            max_results: How many results to pull back
+            time_range: Optional recency filter (day, week, month, year)
+
+        Returns:
+            Search results dictionary
+        """
+        results = self.client.search(
+            query=query,
+            max_results=max_results,
+            search_depth="basic",
+            time_range=time_range
+        )
+        return {
+            "query": query,
+            "results": results.get("results", []),
+            "count": len(results.get("results", []))
+        }
+
+    def deep_research(self, question: str) -> Dict[str, Any]:
+        """
+        Open-ended research on any topic or question, using Tavily's research
+        endpoint (multi-source, cited). Use for "explain the current state of X",
+        "what's happening with Y", broader questions a single search wouldn't answer well.
+
+        Args:
+            question: The open-ended question or topic
+
+        Returns:
+            Research report with citations
+        """
+        research_results = self.client.research(input_text=question, model="pro")
+        return {
+            "question": question,
+            "research_date": datetime.now().isoformat(),
+            "report": research_results
+        }
+
+    def answer_with_sources(self, query: str) -> Dict[str, Any]:
+        """
+        Middle ground between quick_search and deep_research: a handful of
+        results plus their source URLs, good for "what does X say about Y"
+        style questions where you want a short grounded answer with citations.
+        """
+        results = self.client.search(
+            query=query,
+            max_results=5,
+            search_depth="advanced"
+        )
+        items = results.get("results", [])
+        return {
+            "query": query,
+            "sources": [{"title": r.get("title"), "url": r.get("url")} for r in items],
+            "snippets": [r.get("content", "")[:400] for r in items]
+        }
+
+
+def create_general_search() -> GeneralSearchAssistant:
+    """Create GeneralSearchAssistant instance — for any query, not just the 4 fixed flows."""
+    return GeneralSearchAssistant(get_tavily_client())
+

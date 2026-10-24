@@ -1,0 +1,24 @@
+services:
+  - type: web
+    name: voice-chatbot-backend
+    runtime: python
+    plan: free
+    buildCommand: pip install -r requirements.txt fastapi uvicorn bcrypt pyjwt
+    startCommand: uvicorn backend.main:app --host 0.0.0.0 --port $PORT
+    envVars:
+      - key: GOOGLE_API_KEY
+        sync: false
+      - key: DEEPGRAM_API_KEY
+        sync: false
+      - key: TAVILY_API_KEY
+        sync: false
+      - key: JWT_SECRET_KEY
+        sync: false
+      - key: DATABASE_URL
+        fromDatabase:
+          name: voice-chatbot-db
+          property: connectionString
+
+databases:
+  - name: voice-chatbot-db
+    plan: free

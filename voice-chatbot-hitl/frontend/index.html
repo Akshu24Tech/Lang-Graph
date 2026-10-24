@@ -1,0 +1,890 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Voice Chatbot — Review Gate</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link
+    href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap"
+    rel="stylesheet">
+  <style>
+    :root {
+      --ink: #12141C;
+      --panel: #1B1E29;
+      --panel-raised: #232738;
+      --line: #2E3245;
+      --text: #E8E6E1;
+      --text-dim: #8C90A3;
+      --copper: #C97A4A;
+      --copper-soft: rgba(201, 122, 74, 0.14);
+      --sage: #6FAE8C;
+      --sage-soft: rgba(111, 174, 140, 0.14);
+      --brick: #C15C5C;
+      --brick-soft: rgba(193, 92, 92, 0.14);
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    html,
+    body {
+      height: 100%;
+    }
+
+    body {
+      background: var(--ink);
+      color: var(--text);
+      font-family: 'Inter', sans-serif;
+      margin: 0;
+      background-image:
+        radial-gradient(ellipse 900px 500px at 15% -10%, rgba(201, 122, 74, 0.07), transparent),
+        radial-gradient(ellipse 700px 600px at 100% 100%, rgba(111, 174, 140, 0.05), transparent);
+    }
+
+    .display {
+      font-family: 'Space Grotesk', sans-serif;
+      letter-spacing: -0.02em;
+    }
+
+    .mono {
+      font-family: 'IBM Plex Mono', monospace;
+    }
+
+    /* ---- Auth screen ---- */
+    #authScreen {
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+
+    #authCard {
+      width: 100%;
+      max-width: 380px;
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      padding: 32px 28px;
+      box-shadow: 0 20px 60px -20px rgba(0, 0, 0, 0.6);
+    }
+
+    #authCard h1 {
+      font-size: 1.3rem;
+      margin: 0 0 4px;
+    }
+
+    #authCard p.sub {
+      font-size: 0.82rem;
+      color: var(--text-dim);
+      margin: 0 0 22px;
+    }
+
+    .field-label {
+      font-size: 0.75rem;
+      color: var(--text-dim);
+      margin-bottom: 5px;
+      display: block;
+    }
+
+    .auth-input {
+      width: 100%;
+      background: var(--ink);
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 10px 12px;
+      color: var(--text);
+      font-size: 0.9rem;
+      margin-bottom: 14px;
+    }
+
+    .auth-input:focus {
+      outline: none;
+      border-color: var(--copper);
+    }
+
+    .auth-btn {
+      width: 100%;
+      background: var(--copper);
+      color: #12141C;
+      font-weight: 600;
+      border: none;
+      border-radius: 8px;
+      padding: 11px;
+      font-size: 0.9rem;
+      cursor: pointer;
+      margin-top: 4px;
+      transition: opacity 0.15s ease;
+    }
+
+    .auth-btn:hover {
+      opacity: 0.88;
+    }
+
+    .auth-btn:disabled {
+      opacity: 0.5;
+      cursor: default;
+    }
+
+    .auth-toggle {
+      text-align: center;
+      font-size: 0.82rem;
+      color: var(--text-dim);
+      margin-top: 16px;
+    }
+
+    .auth-toggle a {
+      color: var(--copper);
+      cursor: pointer;
+      text-decoration: none;
+    }
+
+    .auth-error {
+      font-size: 0.8rem;
+      color: var(--brick);
+      background: var(--brick-soft);
+      border-radius: 6px;
+      padding: 8px 10px;
+      margin-bottom: 14px;
+      display: none;
+    }
+
+    /* ---- Shell ---- */
+    #shell {
+      display: none;
+      grid-template-columns: 260px 1fr;
+      max-width: 1120px;
+      margin: 0 auto;
+      min-height: 100vh;
+    }
+
+    @media (max-width: 800px) {
+      #shell {
+        grid-template-columns: 1fr;
+      }
+
+      #rail {
+        display: none;
+      }
+    }
+
+    #rail {
+      border-right: 1px solid var(--line);
+      padding: 28px 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 24px;
+    }
+
+    .rail-section-label {
+      font-size: 0.7rem;
+      text-transform: uppercase;
+      letter-spacing: 0.12em;
+      color: var(--text-dim);
+      margin-bottom: 10px;
+    }
+
+    #account-email {
+      font-size: 0.75rem;
+      color: var(--text-dim);
+      word-break: break-all;
+      margin-bottom: 8px;
+    }
+
+    #logoutBtn {
+      font-size: 0.75rem;
+      color: var(--brick);
+      background: none;
+      border: none;
+      cursor: pointer;
+      padding: 0;
+    }
+
+    #memory-list {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      max-height: 320px;
+      overflow-y: auto;
+    }
+
+    .memory-chip {
+      font-size: 0.75rem;
+      background: var(--panel);
+      border-left: 2px solid var(--copper);
+      border-radius: 0 6px 6px 0;
+      padding: 7px 9px;
+      color: var(--text-dim);
+      opacity: 0;
+      animation: chip-in 0.4s ease forwards;
+    }
+
+    @keyframes chip-in {
+      from {
+        opacity: 0;
+        transform: translateX(-4px);
+      }
+
+      to {
+        opacity: 1;
+        transform: translateX(0);
+      }
+    }
+
+    #memory-empty {
+      font-size: 0.75rem;
+      color: var(--text-dim);
+      font-style: italic;
+    }
+
+    #main {
+      display: flex;
+      flex-direction: column;
+      padding: 28px 24px 20px;
+      min-width: 0;
+    }
+
+    h1 {
+      font-size: 1.15rem;
+      margin: 0;
+      font-weight: 600;
+    }
+
+    .subtitle {
+      font-size: 0.78rem;
+      color: var(--text-dim);
+      margin: 2px 0 20px;
+    }
+
+    .toggle-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 14px;
+    }
+
+    .switch {
+      position: relative;
+      width: 34px;
+      height: 19px;
+      flex-shrink: 0;
+    }
+
+    .switch input {
+      opacity: 0;
+      width: 0;
+      height: 0;
+    }
+
+    .slider {
+      position: absolute;
+      inset: 0;
+      background: var(--panel-raised);
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      cursor: pointer;
+      transition: background 0.2s ease, border-color 0.2s ease;
+    }
+
+    .slider::before {
+      content: "";
+      position: absolute;
+      width: 13px;
+      height: 13px;
+      left: 2px;
+      top: 2px;
+      background: var(--text-dim);
+      border-radius: 50%;
+      transition: transform 0.2s ease, background 0.2s ease;
+    }
+
+    input:checked+.slider {
+      background: var(--copper-soft);
+      border-color: var(--copper);
+    }
+
+    input:checked+.slider::before {
+      transform: translateX(15px);
+      background: var(--copper);
+    }
+
+    .toggle-label {
+      font-size: 0.78rem;
+      color: var(--text-dim);
+    }
+
+    #chat {
+      flex: 1;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+      padding: 4px 2px 16px;
+    }
+
+    .msg {
+      max-width: 82%;
+      line-height: 1.55;
+      font-size: 0.92rem;
+    }
+
+    .msg.user {
+      align-self: flex-end;
+    }
+
+    .msg.bot {
+      align-self: flex-start;
+    }
+
+    .bubble {
+      padding: 11px 14px;
+      border-radius: 12px;
+    }
+
+    .msg.user .bubble {
+      background: var(--copper-soft);
+      border: 1px solid rgba(201, 122, 74, 0.3);
+      border-bottom-right-radius: 3px;
+    }
+
+    .msg.bot .bubble {
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-bottom-left-radius: 3px;
+      box-shadow: 0 4px 16px -6px rgba(0, 0, 0, 0.5);
+    }
+
+    .msg-tag {
+      font-size: 0.65rem;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      color: var(--text-dim);
+      display: block;
+      margin-bottom: 5px;
+    }
+
+    .gate {
+      align-self: flex-start;
+      max-width: 90%;
+      border-radius: 12px;
+      background: var(--panel-raised);
+      border: 1px solid var(--line);
+      border-left: 3px solid var(--copper);
+      padding: 14px 16px 14px 15px;
+      box-shadow: 0 8px 24px -10px rgba(201, 122, 74, 0.25), 0 2px 8px -4px rgba(0, 0, 0, 0.4);
+      animation: gate-pulse 2.2s ease-in-out infinite;
+    }
+
+    @keyframes gate-pulse {
+
+      0%,
+      100% {
+        border-left-color: var(--copper);
+      }
+
+      50% {
+        border-left-color: rgba(201, 122, 74, 0.5);
+      }
+    }
+
+    .gate.resolved-approve {
+      border-left-color: var(--sage);
+      animation: none;
+      box-shadow: 0 8px 24px -10px rgba(111, 174, 140, 0.25);
+    }
+
+    .gate.resolved-reject {
+      border-left-color: var(--brick);
+      animation: none;
+      box-shadow: 0 8px 24px -10px rgba(193, 92, 92, 0.25);
+    }
+
+    .gate-label {
+      font-size: 0.65rem;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      color: var(--copper);
+      margin-bottom: 8px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .gate-dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: var(--copper);
+      box-shadow: 0 0 0 3px var(--copper-soft);
+    }
+
+    .gate-text {
+      font-size: 0.92rem;
+      line-height: 1.55;
+      margin-bottom: 12px;
+    }
+
+    .gate-actions {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .btn {
+      font-family: 'Inter', sans-serif;
+      font-size: 0.8rem;
+      font-weight: 500;
+      padding: 7px 13px;
+      border-radius: 7px;
+      cursor: pointer;
+      border: 1px solid transparent;
+      transition: transform 0.12s ease, background 0.15s ease, border-color 0.15s ease;
+    }
+
+    .btn:active {
+      transform: scale(0.97);
+    }
+
+    .btn-approve {
+      background: var(--sage-soft);
+      color: var(--sage);
+      border-color: rgba(111, 174, 140, 0.35);
+    }
+
+    .btn-approve:hover {
+      background: rgba(111, 174, 140, 0.22);
+    }
+
+    .btn-reject {
+      background: transparent;
+      color: var(--text-dim);
+      border-color: var(--line);
+    }
+
+    .btn-reject:hover {
+      border-color: var(--brick);
+      color: var(--brick);
+    }
+
+    .feedback-row {
+      display: none;
+      gap: 8px;
+      margin-top: 10px;
+    }
+
+    .feedback-input {
+      flex: 1;
+      background: var(--ink);
+      border: 1px solid var(--line);
+      border-radius: 7px;
+      padding: 7px 10px;
+      color: var(--text);
+      font-size: 0.82rem;
+    }
+
+    .feedback-input:focus {
+      outline: none;
+      border-color: var(--brick);
+    }
+
+    .btn-submit-fb {
+      background: var(--brick-soft);
+      color: var(--brick);
+      border-color: rgba(193, 92, 92, 0.35);
+    }
+
+    .btn-submit-fb:hover {
+      background: rgba(193, 92, 92, 0.22);
+    }
+
+    #composer {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+      border-top: 1px solid var(--line);
+      padding-top: 14px;
+      margin-top: 8px;
+    }
+
+    #textInput {
+      flex: 1;
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 9px;
+      padding: 10px 14px;
+      color: var(--text);
+      font-size: 0.9rem;
+    }
+
+    #textInput:focus {
+      outline: none;
+      border-color: var(--copper);
+    }
+
+    #micBtn,
+    #sendBtn {
+      width: 40px;
+      height: 40px;
+      border-radius: 9px;
+      border: 1px solid var(--line);
+      background: var(--panel);
+      color: var(--text-dim);
+      cursor: pointer;
+      flex-shrink: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1rem;
+      transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+    }
+
+    #micBtn:hover,
+    #sendBtn:hover {
+      border-color: var(--copper);
+      color: var(--copper);
+    }
+
+    #micBtn.recording {
+      background: var(--brick-soft);
+      border-color: var(--brick);
+      color: var(--brick);
+      animation: mic-glow 1.2s ease-in-out infinite;
+    }
+
+    @keyframes mic-glow {
+
+      0%,
+      100% {
+        opacity: 1;
+      }
+
+      50% {
+        opacity: 0.6;
+      }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+
+      .gate,
+      .memory-chip,
+      #micBtn.recording {
+        animation: none !important;
+      }
+    }
+
+    #chat::-webkit-scrollbar,
+    #memory-list::-webkit-scrollbar {
+      width: 6px;
+    }
+
+    #chat::-webkit-scrollbar-thumb,
+    #memory-list::-webkit-scrollbar-thumb {
+      background: var(--line);
+      border-radius: 3px;
+    }
+  </style>
+</head>
+
+<body>
+
+  <div id="authScreen">
+    <div id="authCard">
+      <h1 class="display" id="authTitle">Welcome back</h1>
+      <p class="sub" id="authSub">Log in to pick up right where you left off.</p>
+      <div class="auth-error" id="authError"></div>
+      <label class="field-label">Email</label>
+      <input class="auth-input" type="email" id="authEmail" placeholder="you@example.com" />
+      <label class="field-label">Password</label>
+      <input class="auth-input" type="password" id="authPassword" placeholder="••••••••" />
+      <button class="auth-btn" id="authSubmit">Log in</button>
+      <div class="auth-toggle" id="authToggleRow">
+        Don't have an account? <a id="authToggleLink">Sign up</a>
+      </div>
+    </div>
+  </div>
+
+  <div id="shell">
+    <aside id="rail">
+      <div>
+        <div class="rail-section-label display">Account</div>
+        <div id="account-email" class="mono">—</div>
+        <button id="logoutBtn">Log out</button>
+      </div>
+      <div>
+        <div class="rail-section-label display">Long-term memory</div>
+        <div id="memory-list">
+          <div id="memory-empty">No facts stored yet — they'll appear here as the assistant learns things about you.
+          </div>
+        </div>
+      </div>
+    </aside>
+
+    <main id="main">
+      <header>
+        <h1 class="display">Review Gate</h1>
+      </header>
+      <p class="subtitle">Every reply waits for your approval before it's delivered.</p>
+
+      <div class="toggle-row">
+        <label class="switch"><input type="checkbox" id="voiceToggle"><span class="slider"></span></label>
+        <span class="toggle-label">Read approved replies aloud</span>
+      </div>
+      <div class="toggle-row">
+        <label class="switch"><input type="checkbox" id="reviewToggle" checked><span class="slider"></span></label>
+        <span class="toggle-label">Require my approval before replies are delivered</span>
+      </div>
+
+      <div id="chat"></div>
+
+      <div id="composer">
+        <button id="micBtn" title="Speak" aria-label="Speak">🎙</button>
+        <input id="textInput" type="text" placeholder="Say something…" aria-label="Message" />
+        <button id="sendBtn" title="Send" aria-label="Send">→</button>
+      </div>
+    </main>
+  </div>
+
+  <script>
+    // Automatically fall back to local server if running locally (localhost or file protocol)
+    const API = "https://voice-chatbot-backend-gq2y.onrender.com";
+
+    // --- Auth state ---
+    let token = localStorage.getItem("voice_chatbot_token");
+    let userEmail = localStorage.getItem("voice_chatbot_email");
+    let mode = "login"; // or "signup"
+
+    const authScreen = document.getElementById("authScreen");
+    const shell = document.getElementById("shell");
+    const authTitle = document.getElementById("authTitle");
+    const authSub = document.getElementById("authSub");
+    const authSubmit = document.getElementById("authSubmit");
+    const authToggleLink = document.getElementById("authToggleLink");
+    const authToggleRow = document.getElementById("authToggleRow");
+    const authError = document.getElementById("authError");
+    const authEmail = document.getElementById("authEmail");
+    const authPassword = document.getElementById("authPassword");
+
+    function showApp() {
+      authScreen.style.display = "none";
+      shell.style.display = "grid";
+      document.getElementById("account-email").textContent = userEmail || "";
+    }
+
+    function showAuth() {
+      authScreen.style.display = "flex";
+      shell.style.display = "none";
+    }
+
+    function setMode(newMode) {
+      mode = newMode;
+      authError.style.display = "none";
+      if (mode === "login") {
+        authTitle.textContent = "Welcome back";
+        authSub.textContent = "Log in to pick up right where you left off.";
+        authSubmit.textContent = "Log in";
+        authToggleRow.innerHTML = 'Don\'t have an account? <a id="authToggleLink">Sign up</a>';
+      } else {
+        authTitle.textContent = "Create your account";
+        authSub.textContent = "Your memory will follow this account on any device.";
+        authSubmit.textContent = "Sign up";
+        authToggleRow.innerHTML = 'Already have an account? <a id="authToggleLink">Log in</a>';
+      }
+      document.getElementById("authToggleLink").onclick = () => setMode(mode === "login" ? "signup" : "login");
+    }
+    authToggleLink.onclick = () => setMode("signup");
+
+    authSubmit.onclick = async () => {
+      const email = authEmail.value.trim();
+      const password = authPassword.value;
+      if (!email || !password) return;
+      authSubmit.disabled = true;
+      authError.style.display = "none";
+      try {
+        const res = await fetch(`${API}/auth/${mode === "login" ? "login" : "signup"}`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ email, password })
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.detail || "Something went wrong");
+        token = data.token;
+        userEmail = email;
+        localStorage.setItem("voice_chatbot_token", token);
+        localStorage.setItem("voice_chatbot_email", userEmail);
+        showApp();
+      } catch (e) {
+        authError.textContent = e.message;
+        authError.style.display = "block";
+      } finally {
+        authSubmit.disabled = false;
+      }
+    };
+
+    document.getElementById("logoutBtn").onclick = () => {
+      localStorage.removeItem("voice_chatbot_token");
+      localStorage.removeItem("voice_chatbot_email");
+      token = null;
+      showAuth();
+    };
+
+    if (token) { showApp(); } else { setMode("login"); showAuth(); }
+
+    // --- Chat logic (all requests now carry the Bearer token) ---
+    const chatEl = document.getElementById("chat");
+    const textInput = document.getElementById("textInput");
+    const memoryList = document.getElementById("memory-list");
+    const memoryEmpty = document.getElementById("memory-empty");
+    let memoryCount = 0;
+    let currentAudio = null; // Holds the currently playing speech audio
+
+    function authHeaders() {
+      return { "Content-Type": "application/json", "Authorization": `Bearer ${token}` };
+    }
+
+    function stopSpeaking() {
+      if (currentAudio) {
+        currentAudio.pause();
+        currentAudio.currentTime = 0;
+        currentAudio = null;
+      }
+    }
+
+    function addMessage(role, text) {
+      const div = document.createElement("div");
+      div.className = "msg " + role;
+      div.innerHTML = `<span class="msg-tag">${role === "user" ? "You" : "Assistant"}</span><div class="bubble">${text}</div>`;
+      chatEl.appendChild(div);
+      chatEl.scrollTop = chatEl.scrollHeight;
+    }
+
+    function addMemoryChip(text) {
+      if (memoryCount === 0) memoryEmpty.style.display = "none";
+      memoryCount++;
+      const chip = document.createElement("div");
+      chip.className = "memory-chip mono";
+      chip.textContent = text;
+      memoryList.appendChild(chip);
+    }
+
+    function addGate(text, usedWebSearch) {
+      const gate = document.createElement("div");
+      gate.className = "gate";
+      gate.innerHTML = `
+    <div class="gate-label"><span class="gate-dot"></span>Awaiting your review${usedWebSearch ? ' · web search used' : ''}</div>
+    <div class="gate-text">${text}</div>
+    <div class="gate-actions">
+      <button class="btn btn-approve">Approve</button>
+      <button class="btn btn-reject">Request changes</button>
+    </div>
+    <div class="feedback-row">
+      <input class="feedback-input" type="text" placeholder="What should change?" />
+      <button class="btn btn-submit-fb">Submit</button>
+    </div>
+  `;
+      chatEl.appendChild(gate);
+      chatEl.scrollTop = chatEl.scrollHeight;
+
+      gate.querySelector(".btn-approve").onclick = () => resolveGate(gate, true);
+      gate.querySelector(".btn-reject").onclick = () => { gate.querySelector(".feedback-row").style.display = "flex"; };
+      gate.querySelector(".btn-submit-fb").onclick = () => {
+        const val = gate.querySelector(".feedback-input").value.trim();
+        if (val) resolveGate(gate, false, val);
+      };
+      gate.querySelector(".feedback-input").addEventListener("keydown", (e) => {
+        if (e.key === "Enter") gate.querySelector(".btn-submit-fb").click();
+      });
+    }
+
+    async function resolveGate(gate, approved, feedback) {
+      const voiceEnabled = document.getElementById("voiceToggle").checked;
+      gate.querySelector(".gate-actions").style.display = "none";
+      const fbRow = gate.querySelector(".feedback-row");
+      if (fbRow) fbRow.style.display = "none";
+      gate.querySelector(".gate-label").innerHTML = approved
+        ? '<span class="gate-dot"></span>Approved — delivering'
+        : '<span class="gate-dot"></span>Regenerating';
+      gate.classList.add(approved ? "resolved-approve" : "resolved-reject");
+
+      const res = await fetch(`${API}/approve`, {
+        method: "POST", headers: authHeaders(),
+        body: JSON.stringify({ approved, feedback, voice_enabled: voiceEnabled, selected_voice: "aura-asteria-en" })
+      });
+      const data = await res.json();
+      gate.remove();
+
+      if (data.status === "delivered") {
+        addMessage("bot", data.final_response);
+        if (data.audio_base64) {
+          stopSpeaking();
+          currentAudio = new Audio("data:audio/mp3;base64," + data.audio_base64);
+          currentAudio.play();
+        }
+      } else {
+        addGate(data.pending_response);
+      }
+    }
+
+    async function sendMessage(text) {
+      if (!text.trim()) return;
+      stopSpeaking(); // Stop previous audio when user sends a new message
+      addMessage("user", text);
+      textInput.value = "";
+      const voiceEnabled = document.getElementById("voiceToggle").checked;
+      const reviewEnabled = document.getElementById("reviewToggle").checked;
+
+      const res = await fetch(`${API}/chat`, {
+        method: "POST", headers: authHeaders(),
+        body: JSON.stringify({ message: text, voice_enabled: voiceEnabled, human_review_enabled: reviewEnabled })
+      });
+      const data = await res.json();
+
+      if (data.new_memories && data.new_memories.length) {
+        data.new_memories.forEach(addMemoryChip);
+      }
+
+      if (data.status === "delivered") {
+        addMessage("bot", data.final_response);
+        if (data.audio_base64) {
+          stopSpeaking();
+          currentAudio = new Audio("data:audio/mp3;base64," + data.audio_base64);
+          currentAudio.play();
+        }
+      } else {
+        addGate(data.pending_response, data.used_web_search);
+      }
+    }
+
+    document.getElementById("sendBtn").onclick = () => sendMessage(textInput.value);
+    textInput.addEventListener("keydown", (e) => { if (e.key === "Enter") sendMessage(textInput.value); });
+
+    const micBtn = document.getElementById("micBtn");
+    let recognition, recognizing = false;
+    if ("webkitSpeechRecognition" in window || "SpeechRecognition" in window) {
+      const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+      recognition = new SR();
+      recognition.continuous = false;
+      recognition.interimResults = false;
+      recognition.onresult = (e) => sendMessage(e.results[0][0].transcript);
+      recognition.onend = () => { recognizing = false; micBtn.classList.remove("recording"); };
+    } else {
+      micBtn.disabled = true;
+      micBtn.title = "Voice input not supported in this browser";
+    }
+    micBtn.onclick = () => {
+      if (!recognition) return;
+      if (recognizing) { recognition.stop(); }
+      else {
+        stopSpeaking(); // Stop any bot speech when user triggers the microphone
+        recognition.start();
+        recognizing = true;
+        micBtn.classList.add("recording");
+      }
+    };
+  </script>
+</body>
+
+</html>

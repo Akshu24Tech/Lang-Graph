@@ -48,27 +48,27 @@ def get_ltm_store() -> BaseStore:
             # This creates the necessary tables if they don't exist
             try:
                 store.setup()
-                print("✅ Database tables initialized")
+                print("[OK] Database tables initialized")
             except Exception as e:
                 # If setup fails, it might already be set up, which is fine
                 # Some errors are expected if tables already exist
                 if "already exists" not in str(e).lower():
-                    print(f"⚠️  Database setup note: {str(e)}")
+                    print(f"[WARNING] Database setup note: {str(e)}")
             
-            print("✅ Using PostgreSQL for LTM (Long Term Memory) - persistent storage")
+            print("[OK] Using PostgreSQL for LTM (Long Term Memory) - persistent storage")
             _ltm_store_instance = store
             return store
         except ImportError:
-            print("⚠️  PostgreSQL dependencies not installed. Install with: pip install 'psycopg[binary,pool]' langgraph-checkpoint-postgres")
-            print("📦 Falling back to InMemoryStore (non-persistent)")
+            print("[WARNING] PostgreSQL dependencies not installed. Install with: pip install 'psycopg[binary,pool]' langgraph-checkpoint-postgres")
+            print("[INFO] Falling back to InMemoryStore (non-persistent)")
             _ltm_store_instance = InMemoryStore()
             return _ltm_store_instance
         except Exception as e:
-            print(f"⚠️  Error connecting to PostgreSQL: {str(e)}")
-            print("📦 Falling back to InMemoryStore (non-persistent)")
+            print(f"[WARNING] Error connecting to PostgreSQL: {str(e)}")
+            print("[INFO] Falling back to InMemoryStore (non-persistent)")
             _ltm_store_instance = InMemoryStore()
             return _ltm_store_instance
     else:
-        print("📦 Using InMemoryStore for LTM (non-persistent) - set DATABASE_URL for PostgreSQL")
+        print("[INFO] Using InMemoryStore for LTM (non-persistent) - set DATABASE_URL for PostgreSQL")
         _ltm_store_instance = InMemoryStore()
         return _ltm_store_instance
